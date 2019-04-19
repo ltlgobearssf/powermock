@@ -109,7 +109,7 @@ public class MockRepository {
 	 * can only be set once per class per CL. That's why we cannot remove this
 	 * state.
 	 */
-	public synchronized static void clear() {
+	public static void clear() {
         synchronized(newSubstitutions) {
             newSubstitutions.clear();
         }
