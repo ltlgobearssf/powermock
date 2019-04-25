@@ -1,14 +1,21 @@
+- clone this powermock repo:
+git clone https://github.com/ltlgobearssf/powermock.git
 - make any changes to code in the powermock directory
 - run  this to verify the build works
-build.sh
+sh ./build.sh
 - install jars into maven
-build.sh publishToMavenLocal
+sh ./build.sh publishToMavenLocal
 -verify the 2.0.1 jars are stored locally
 ls -l ~/.m2/repository/org/powermock/powermock-core/2.0.1
 
-- in the mockito directory
+- clone the mockito directory
+git clone git@gitaws.soma.salesforce.com:larry-lopez/mockito.git 
+- go to the mockito directory
+cd mockito
 - set the new version in pom.xml and build.sh
-- run build.sh to build the uber jar and install it locally.
+vi pom.xml build.sh
+- run build.sh to build the uber jar and install it locally when it asks you at the end.
+sh ./build.sh
 - test out the uber jar.
 - publish to nexus by cloning this work item
 https://gus.lightning.force.com/lightning/r/ADM_Work__c/a07B0000006JgEMIA0/view
