@@ -37,6 +37,8 @@ public class MockRepository {
 
 	private static Set<Object> objectsToAutomaticallyReplayAndVerify = new IdentityHashSet<Object>();
 
+	private static boolean throwClearErrors = Boolean.getBoolean("powermock.throw.clear.errors");
+
 	private static Map<Class<?>, NewInvocationControl<?>> newSubstitutions = new HashMap<Class<?>, NewInvocationControl<?>>();
 
 	/**
@@ -98,6 +100,7 @@ public class MockRepository {
 	 */
 	private static final Set<Runnable> afterMethodRunners = new HashSet<Runnable>();
 
+
 	/**
 	 * Clear all state of the mock repository except for static initializers.
 	 * The reason for not clearing static initializers is that when running in a
@@ -110,115 +113,121 @@ public class MockRepository {
 	 * state.
 	 */
 	public static void clear() {
-        synchronized(newSubstitutions) {
-            newSubstitutions.clear();
-        }
-        synchronized(classMocks) {
-            classMocks.clear();
-        }
-        synchronized(instanceMocks) {
-            instanceMocks.clear();
-        }
-        synchronized(objectsToAutomaticallyReplayAndVerify) {
-            objectsToAutomaticallyReplayAndVerify.clear();
-        }
-        synchronized(additionalState) {
-            additionalState.clear();
-        }
-        synchronized(suppressConstructor) {
-            suppressConstructor.clear();
-        }
-        synchronized(suppressMethod) {
-            suppressMethod.clear();
-        }
-        synchronized(substituteReturnValues) {
-            substituteReturnValues.clear();
-        }
-        synchronized(suppressField) {
-            suppressField.clear();
-            suppressFieldTypes.clear();
-        }
-        synchronized(methodProxies) {
-            methodProxies.clear();
-        }
-        synchronized(afterMethodRunners) {
-            for (Runnable runnable : afterMethodRunners) {
-                runnable.run();
+            synchronized(newSubstitutions) {
+                newSubstitutions.clear();
             }
-            afterMethodRunners.clear();
-        }
+            synchronized(classMocks) {
+                classMocks.clear();
+            }
+            synchronized(instanceMocks) {
+                instanceMocks.clear();
+            }
+            synchronized(objectsToAutomaticallyReplayAndVerify) {
+                objectsToAutomaticallyReplayAndVerify.clear();
+            }
+            synchronized(additionalState) {
+                additionalState.clear();
+            }
+            synchronized(suppressConstructor) {
+                suppressConstructor.clear();
+            }
+            synchronized(suppressMethod) {
+                suppressMethod.clear();
+            }
+            synchronized(substituteReturnValues) {
+                substituteReturnValues.clear();
+            }
+            synchronized(suppressField) {
+                suppressField.clear();
+                suppressFieldTypes.clear();
+            }
+            synchronized(methodProxies) {
+                methodProxies.clear();
+            }
+            synchronized(afterMethodRunners) {
+                for (Runnable runnable : afterMethodRunners) {
+                    try { 
+                        runnable.run();
+                    } catch (Exception e) { 
+                        if(throwClearErrors) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                }
+                afterMethodRunners.clear();
+            }
 	}
 
 	/**
 	 * Removes an object from the MockRepository if it exists.
 	 */
 	public static void remove(Object mock) {
-		if (mock instanceof Class<?>) {
-            synchronized(newSubstitutions) {
-                if (newSubstitutions.containsKey(mock)) {
-                    newSubstitutions.remove(mock);
+            if (mock instanceof Class<?>) {
+                synchronized(newSubstitutions) {
+                    if (newSubstitutions.containsKey(mock)) {
+                        newSubstitutions.remove(mock);
+                    }
+                }
+                synchronized(classMocks) {
+                    if (classMocks.containsKey(mock)) {
+                        classMocks.remove(mock);
+                    }
+                }
+            } else  {
+                synchronized(instanceMocks) {
+                    if (instanceMocks.containsKey(mock)) {
+                        instanceMocks.remove(mock);
+                    }
                 }
             }
-            synchronized(classMocks) {
-                if (classMocks.containsKey(mock)) {
-                    classMocks.remove(mock);
-                }
-            }
-		} else  {
-            synchronized(instanceMocks) {
-                if (instanceMocks.containsKey(mock)) {
-                    instanceMocks.remove(mock);
-                }
-            }
-        }
 	}
 
 	public static MethodInvocationControl getStaticMethodInvocationControl(Class<?> type) {
-        synchronized(classMocks) {
-            return classMocks.get(type);
-        }
+            synchronized(classMocks) {
+                return classMocks.get(type);
+            }
 	}
 
 	public static MethodInvocationControl putStaticMethodInvocationControl(Class<?> type, MethodInvocationControl invocationControl) {
-        synchronized(classMocks) {
-            return classMocks.put(type, invocationControl);
-        }
+            synchronized(classMocks) {
+                return classMocks.put(type, invocationControl);
+            }
 	}
 
 	public static MethodInvocationControl removeClassMethodInvocationControl(Class<?> type) {
-        synchronized(classMocks) {
-            return classMocks.remove(type);
-        }
+            synchronized(classMocks) {
+                return classMocks.remove(type);
+            }
 	}
 
 	public static MethodInvocationControl getInstanceMethodInvocationControl(Object instance) {
-        synchronized(instanceMocks) {
-            return instanceMocks.get(instance);
-        }
+            synchronized(instanceMocks) {
+                return instanceMocks.get(instance);
+            }
 	}
 
 	public static MethodInvocationControl putInstanceMethodInvocationControl(Object instance, MethodInvocationControl invocationControl) {
-        synchronized(instanceMocks) {
-            return instanceMocks.put(instance, invocationControl);
-        }
+            synchronized(instanceMocks) {
+                return instanceMocks.put(instance, invocationControl);
+            }
 	}
 
 	public static MethodInvocationControl removeInstanceMethodInvocationControl(Class<?> type) {
-        synchronized(classMocks) {
-            return classMocks.remove(type);
-        }
+            synchronized(classMocks) {
+                return classMocks.remove(type);
+            }
 	}
 
 	public static NewInvocationControl<?> getNewInstanceControl(Class<?> type) {
-        synchronized(newSubstitutions) {
-            return newSubstitutions.get(type);
-        }
+            synchronized(newSubstitutions) {
+                return newSubstitutions.get(type);
+            }
 	}
 
 	public static NewInvocationControl<?> putNewInstanceControl(Class<?> type, NewInvocationControl<?> control) {
-        synchronized(newSubstitutions) {
-            return newSubstitutions.put(type, control);
-        }
+            synchronized(newSubstitutions) {
+                return newSubstitutions.put(type, control);
+            }
 	}
 
 	/**
@@ -230,9 +239,9 @@ public class MockRepository {
 	 *            its static initializers suppressed.
 	 */
 	public static void addSuppressStaticInitializer(String className) {
-        synchronized(suppressStaticInitializers) {
-            suppressStaticInitializers.add(className);
-        }
+            synchronized(suppressStaticInitializers) {
+                suppressStaticInitializers.add(className);
+            }
 	}
 
 	/**
@@ -244,9 +253,9 @@ public class MockRepository {
 	 *            longer have its static initializers suppressed.
 	 */
 	public static void removeSuppressStaticInitializer(String className) {
-        synchronized(suppressStaticInitializers) {
-            suppressStaticInitializers.remove(className);
-        }
+            synchronized(suppressStaticInitializers) {
+                suppressStaticInitializers.remove(className);
+            }
 	}
 
 	/**
@@ -259,27 +268,27 @@ public class MockRepository {
 	 *            suppressed, {@code false} otherwise.
 	 */
 	public static boolean shouldSuppressStaticInitializerFor(String className) {
-        synchronized(suppressStaticInitializers) {
-            return suppressStaticInitializers.contains(className);
-        }
+            synchronized(suppressStaticInitializers) {
+                return suppressStaticInitializers.contains(className);
+            }
 	}
 
 	/**
 	 * @return All classes that should be automatically replayed or verified.
 	 */
 	public static Set<Object> getObjectsToAutomaticallyReplayAndVerify() {
-        synchronized(objectsToAutomaticallyReplayAndVerify) {
-            return Collections.unmodifiableSet(objectsToAutomaticallyReplayAndVerify);
-        }
+            synchronized(objectsToAutomaticallyReplayAndVerify) {
+                return Collections.unmodifiableSet(objectsToAutomaticallyReplayAndVerify);
+            }
 	}
 
 	/**
 	 * Add classes that should be automatically replayed or verified.
 	 */
 	public static void addObjectsToAutomaticallyReplayAndVerify(Object... objects) {
-        synchronized(objectsToAutomaticallyReplayAndVerify) {
-            Collections.addAll(objectsToAutomaticallyReplayAndVerify, objects);
-        }
+            synchronized(objectsToAutomaticallyReplayAndVerify) {
+                Collections.addAll(objectsToAutomaticallyReplayAndVerify, objects);
+            }
 	}
 
 	/**
@@ -294,21 +303,21 @@ public class MockRepository {
 	 *         {@code null}.
 	 */
 	public static Object putAdditionalState(String key, Object value) {
-        synchronized(additionalState) {
-            return additionalState.put(key, value);
-        }
+            synchronized(additionalState) {
+                return additionalState.put(key, value);
+            }
 	}
 
 	public static Object removeAdditionalState(String key) {
-        synchronized(additionalState) {
-            return additionalState.remove(key);
-        }
+            synchronized(additionalState) {
+                return additionalState.remove(key);
+            }
 	}
 
 	public static InvocationHandler removeMethodProxy(Method method) {
-        synchronized(methodProxies) {
-            return methodProxies.remove(method);
-        }
+            synchronized(methodProxies) {
+                return methodProxies.remove(method);
+            }
 	}
 
 	/**
@@ -316,9 +325,9 @@ public class MockRepository {
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> T getAdditionalState(String key) {
-        synchronized(additionalState) {
-            return (T) additionalState.get(key);
-        }
+            synchronized(additionalState) {
+                return (T) additionalState.get(key);
+            }
 	}
 
 	/**
@@ -328,9 +337,9 @@ public class MockRepository {
 	 *            The method to suppress.
 	 */
 	public static void addMethodToSuppress(Method method) {
-        synchronized(suppressMethod) {
-            suppressMethod.add(method);
-        }
+            synchronized(suppressMethod) {
+                suppressMethod.add(method);
+            }
 	}
 
 	/**
@@ -340,9 +349,9 @@ public class MockRepository {
 	 *            The field to suppress.
 	 */
 	public static void addFieldToSuppress(Field field) {
-        synchronized(suppressField) {
-            suppressField.add(field);
-        }
+            synchronized(suppressField) {
+                suppressField.add(field);
+            }
 	}
 
 	/**
@@ -353,9 +362,9 @@ public class MockRepository {
 	 *            will be suppressed.
 	 */
 	public static void addFieldTypeToSuppress(String fieldType) {
-        synchronized(suppressField) {
-            suppressFieldTypes.add(fieldType);
-        }
+            synchronized(suppressField) {
+                suppressFieldTypes.add(fieldType);
+            }
 	}
 
 	/**
@@ -365,18 +374,18 @@ public class MockRepository {
 	 *            The constructor to suppress.
 	 */
 	public static void addConstructorToSuppress(Constructor<?> constructor) {
-        synchronized(suppressConstructor) {
-            suppressConstructor.add(constructor);
-        }
+            synchronized(suppressConstructor) {
+                suppressConstructor.add(constructor);
+            }
 	}
 
 	/**
 	 * @return {@code true} if the <tt>method</tt> should be proxied.
 	 */
 	public static boolean hasMethodProxy(Method method) {
-        synchronized(methodProxies) {
-            return methodProxies.containsKey(method);
-        }
+            synchronized(methodProxies) {
+                return methodProxies.containsKey(method);
+            }
 	}
 
 	/**
@@ -384,29 +393,29 @@ public class MockRepository {
 	 */
 	public static boolean shouldSuppressMethod(Method method,
 			Class<?> objectType) throws ClassNotFoundException {
-        synchronized(suppressMethod) {
-            for (Method suppressedMethod : suppressMethod) {
-                Class<?> suppressedMethodClass = suppressedMethod
-                        .getDeclaringClass();
-                if (suppressedMethodClass.getClass().isAssignableFrom(
-                        objectType.getClass())
-                        && suppressedMethod.getName().equals(method.getName())
-                        && ClassLocator.getCallerClass().getName()
-                                .equals(suppressedMethodClass.getName())) {
-                    return true;
+            synchronized(suppressMethod) {
+                for (Method suppressedMethod : suppressMethod) {
+                    Class<?> suppressedMethodClass = suppressedMethod
+                            .getDeclaringClass();
+                    if (suppressedMethodClass.getClass().isAssignableFrom(
+                            objectType.getClass())
+                            && suppressedMethod.getName().equals(method.getName())
+                            && ClassLocator.getCallerClass().getName()
+                                    .equals(suppressedMethodClass.getName())) {
+                        return true;
+                    }
                 }
+                return false;
             }
-            return false;
-        }
 	}
 
 	/**
 	 * @return {@code true} if the <tt>field</tt> should be suppressed.
 	 */
 	public static boolean shouldSuppressField(Field field) {
-        synchronized(suppressField) {
-            return suppressField.contains(field) || suppressFieldTypes.contains(field.getType().getName());
-        }
+            synchronized(suppressField) {
+                return suppressField.contains(field) || suppressFieldTypes.contains(field.getType().getName());
+            }
 	}
 
 	/**
@@ -414,9 +423,9 @@ public class MockRepository {
 	 *         suppressed.
 	 */
 	public static boolean shouldSuppressConstructor(Constructor<?> constructor) {
-        synchronized(suppressConstructor) {
-            return suppressConstructor.contains(constructor);
-        }
+            synchronized(suppressConstructor) {
+                return suppressConstructor.contains(constructor);
+            }
 	}
 
 	/**
@@ -424,9 +433,9 @@ public class MockRepository {
 	 *         value.
 	 */
 	public static boolean shouldStubMethod(Method method) {
-        synchronized(substituteReturnValues) {
-            return substituteReturnValues.containsKey(method);
-        }
+            synchronized(substituteReturnValues) {
+                return substituteReturnValues.containsKey(method);
+            }
 	}
 
 	/**
@@ -434,9 +443,9 @@ public class MockRepository {
 	 *         {@code null}.
 	 */
 	public static Object getMethodToStub(Method method) {
-        synchronized(substituteReturnValues) {
-            return substituteReturnValues.get(method);
-        }
+            synchronized(substituteReturnValues) {
+                return substituteReturnValues.get(method);
+            }
 	}
 
 	/**
@@ -446,18 +455,18 @@ public class MockRepository {
 	 * @return The previous substitute value if any.
 	 */
 	public static Object putMethodToStub(Method method, Object value) {
-        synchronized(substituteReturnValues) {
-            return substituteReturnValues.put(method, value);
-        }
+            synchronized(substituteReturnValues) {
+                return substituteReturnValues.put(method, value);
+            }
 	}
 
 	/**
 	 * @return The proxy for a particular method, may be {@code null}.
 	 */
 	public static InvocationHandler getMethodProxy(Method method) {
-        synchronized(methodProxies) {
-            return methodProxies.get(method);
-        }
+            synchronized(methodProxies) {
+                return methodProxies.get(method);
+            }
 	}
 
 	/**
@@ -467,9 +476,9 @@ public class MockRepository {
 	 * @return The method proxy if any.
 	 */
 	public static InvocationHandler putMethodProxy(Method method, InvocationHandler invocationHandler) {
-        synchronized(methodProxies) {
-            return methodProxies.put(method, invocationHandler);
-        }
+            synchronized(methodProxies) {
+                return methodProxies.put(method, invocationHandler);
+            }
 	}
 
     /**
